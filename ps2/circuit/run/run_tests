@@ -1,0 +1,23 @@
+#!/bin/zsh
+
+code="../circuit_mod.py"
+
+if [ $1 = "1" ]
+then
+    exc="5devadas13"
+else
+    exc=" "
+fi
+
+for file in ../tests/*.in
+do
+    fbn=`basename $file`
+    fbase=${fbn%.*}
+    if [ $fbase != $exc ]
+    then
+        echo "Run test $fbase"
+        python $code < $file > $fbase.out
+        diff $fbase.out ../tests/$fbase.gold
+    fi
+done
+
