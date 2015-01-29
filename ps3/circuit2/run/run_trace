@@ -1,0 +1,4 @@
+#!/bin/zsh
+
+code=../circuit2.py
+TRACE=jsonp python $code < ../tests/5logo.in > trace.jsonp

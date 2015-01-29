@@ -1,0 +1,53 @@
+#!/bin/zsh
+
+#zmodload zsh/pcre
+#setopt REMATCH_PCRE
+#zmodload zsh/regex
+#setopt extendedglob
+
+code="../circuit2.py"
+
+if [[ $1 == "1" ]]
+then
+    exc="10grid_s"
+    exc2="11list_grid_s"
+else
+    exc=" "
+    exc2=" "
+fi
+
+for file in ../tests/*.in
+do
+    fbn=`basename $file`
+    fbase=${fbn%.*}
+
+    if [ $fbase != $exc -a $fbase != $exc2 ]
+    then
+        echo "Run test $fbase"
+
+        if ! [[ $fbase == *list* ]] ; then
+            python $code < $file > $fbase.out
+            out=$fbase.out
+            gold=$fbase.gold
+            ln -s ../tests/$fbase.gold $gold 
+        else
+            TRACE=list python $code < $file > $fbase.out
+            out=$fbase.x 
+            gold=$fbase.y
+            sort $fbase.out > $out
+            rm $fbase.out
+            sort ../tests/$fbase.gold > $gold
+        fi
+
+        diff $out $gold > $fbase.diff 
+
+        if [[ -s $fbase.diff ]] ; then
+            echo "    FAIL"
+        else
+            echo "    PASS"
+            rm $out $gold $fbase.diff
+        fi
+
+    fi
+done
+

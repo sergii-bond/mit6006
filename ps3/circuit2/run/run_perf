@@ -1,0 +1,5 @@
+#!/bin/zsh
+
+code=../circuit2.py
+
+python -m cProfile -s time $code < ../tests/10grid_s.in > 10grid_s.out
