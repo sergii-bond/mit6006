@@ -321,18 +321,25 @@ class CrossVerifier(object):
 
       if event_type == 'remove':
         self.index.remove(KeyWirePair(wire.y1, wire))
+        #print "Removed elem", wire.y1
+        #print self.index
         #pass
       elif event_type == 'add':
         self.index.add(KeyWirePair(wire.y1, wire))
+        #print "Added elem", wire.y1
+        #print self.index
       elif event_type == 'query':
         if count_only:
-            result += self.index.count(KeyWirePairL(wire.y1),
+            cnt = self.index.count(KeyWirePairL(wire.y1),
                                    KeyWirePairH(wire.y2))
+            result += cnt
+            #print "Count", wire.y1, wire.y2, " is ", cnt, "total is", result
         else:
             cross_wires = []
             for kwp in self.index.list(KeyWirePairL(wire.y1),
                                     KeyWirePairH(wire.y2)):
                 result.add_crossing(wire, kwp.wire)
+                
 
     return result
   

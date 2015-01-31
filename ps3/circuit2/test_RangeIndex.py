@@ -2,37 +2,112 @@
 import random
 from RangeIndex import RangeIndex
 
+
+class KeyWirePair(object):
+  """Wraps a wire and the key representing it in the range index.
+  
+  Once created, a key-wire pair is immutable."""
+  
+  def __init__(self, key, wire):
+    """Creates a new key for insertion in the range index."""
+    self.key = key
+    if wire is None:
+      raise ValueError('Use KeyWirePairL or KeyWirePairH for queries')
+    self.wire = wire
+    #self.wire_id = wire.object_id
+    self.wire_id = wire
+
+  def __lt__(self, other):
+    # :nodoc: Delegate comparison to keys.
+    return (self.key < other.key or
+            (self.key == other.key and self.wire_id < other.wire_id))
+  
+  def __le__(self, other):
+    # :nodoc: Delegate comparison to keys.
+    return (self.key < other.key or
+            (self.key == other.key and self.wire_id <= other.wire_id))  
+
+  def __gt__(self, other):
+    # :nodoc: Delegate comparison to keys.
+    return (self.key > other.key or
+            (self.key == other.key and self.wire_id > other.wire_id))
+  
+  def __ge__(self, other):
+    # :nodoc: Delegate comparison to keys.
+    return (self.key > other.key or
+            (self.key == other.key and self.wire_id >= other.wire_id))
+
+  def __eq__(self, other):
+    # :nodoc: Delegate comparison to keys.
+    return self.key == other.key and self.wire_id == other.wire_id
+  
+  def __ne__(self, other):
+    # :nodoc: Delegate comparison to keys.
+    return self.key == other.key and self.wire_id == other.wire_id
+
+  def __hash__(self):
+    # :nodoc: Delegate comparison to keys.
+    return hash([self.key, self.wire_id])
+
+  def __repr__(self):
+    # :nodoc: nicer formatting to help with debugging
+    return '<key: ' + str(self.key) + ' wire: ' + str(self.wire) + '>'
+
+
+class KeyWirePairL(KeyWirePair):
+  """A KeyWirePair that is used as the low end of a range query.
+  
+  This KeyWirePair is smaller than all other KeyWirePairs with the same key."""
+  def __init__(self, key):
+    self.key = key
+    self.wire = None
+    self.wire_id = -1000000000
+
+class KeyWirePairH(KeyWirePair):
+  """A KeyWirePair that is used as the high end of a range query.
+  
+  This KeyWirePair is larger than all other KeyWirePairs with the same key."""
+  def __init__(self, key):
+    self.key = key
+    self.wire = None
+    # HACK(pwnall): assuming 1 billion objects won't fit into RAM.
+    self.wire_id = 1000000000
+
 r = RangeIndex() 
 
-#for i in [5, 7, 9, 4, 1, 0, 24, 45, 34, 21, 38]: 
-#    r.add(i)
-
-#for i in range(15):
-#    r.add(random.randint(10,30))
-#for i in random.sample(range(10,25), 15):
-
 l = []
-for i in random.sample(range(0,10), 9):
-    l.append(i)
-#l = [7, 0, 9, 2, 8, 3, 6, 5, 4]
-#l = [1, 5, 0, 8, 3, 7, 9, 2, 4] 
-#l = [0, 1, 2, 5, 6, 4, 7, 9, 8] 
-print l
+#b = [2, 9, 1, 8, 0, 4, 6, 5, 7]
+b = random.sample(range(0,10), 9)
+#b = []
+for i in b:
+    l.append(KeyWirePair(i, i))
+print [x.key for x in l]
 for i in l:
     r.add(i)
 
-#print "Range:", r.range(100)
-#print "Count_by_key:", r.count_by_key(2)
-print "Count:", r.count(2, 7)
-print "List:", 
-for n in r.list(2, 7):
-    print n.key
+print "Original:\n", r
 
-print r
-x = random.sample(range(0,10), 1)[0]
-r.remove(x)
-print "after removal of", x, ":\n", r
-#for i in [9, 6, 3, 0, 5, 4, 7, 2, 1]:
-#    r.add(i)
-    
+low = -100 
+high = 1000 
 
+#array of elem to remove
+lr = []
+c = random.sample(range(0,10), 9)
+for i in c:
+    lr.append(KeyWirePair(i, i))
+
+for x in lr:
+    print "remove", x.key
+    r.remove(x)
+    l1 = r.list(KeyWirePairL(low), KeyWirePairH(high))
+    #print r
+    print "By list:", len(l1)
+    #print [i.key for i in l1]
+    cnt = r.count(KeyWirePairL(low), KeyWirePairH(high))
+    print "By count:", cnt 
+    if len(l1) != cnt:
+        print r
+
+#print "remove", l[0]
+#r.remove(l[0])
+#print r

@@ -4,8 +4,8 @@ class RangeIndex(object):
   
     def __init__(self):
         """Initially empty range index."""
-        #self.root = Node(None, None)
-        self.root = None
+        self.root = Node(None, None, None)
+        #self.root = None
   
     def add(self, key):
         """Inserts a key in the range index."""
@@ -14,7 +14,7 @@ class RangeIndex(object):
 
         n = Node(key, None)
 
-        if self.root == None:
+        if not self.root.exists:
             self.root = n
         else:
             self.insert(self.root, n)
@@ -57,14 +57,14 @@ class RangeIndex(object):
     def insert(self, x, n):
         x.size += 1
         if n > x:
-            if x.rc.key == None:
+            if not x.rc.exists:
                 n.p = x
                 x.rc = n
                 self.update_nodes_heights(n.p)
             else:
                 self.insert(x.rc, n)
         else:
-            if x.lc.key == None:
+            if not x.lc.exists:
                 n.p = x
                 x.lc = n
                 self.update_nodes_heights(n.p)
@@ -110,7 +110,7 @@ class RangeIndex(object):
             lclc = lc.rc
             lcrc = lc.lc
 
-        if (lc.key == None) or (lclc.h >= lcrc.h):
+        if (not lc.exists) or (lclc.h >= lcrc.h):
             #print "rotating one time\n"
             self._rotate_op(subtree_root, direction)
             #print self
@@ -177,37 +177,18 @@ class RangeIndex(object):
         return self._range(l, self.root)
 
     def _range(self, l, x):
+        if not x.exists:
+            return 0
 
         while (l <= x.key):
             x = x.lc
+            if not x.exists:
+                return 0
 
-        if x.key == None:
-            return 0
 
         #print x.lc
         return x.lc.size + 1 + self._range(l, x.rc)
 
-    #
-    # returns the number of occurrences of 'key' in the tree
-    #
-    def count_by_key(self, key):
-        return self._count_by_key(key, self.root)
-
-    def _count_by_key(self, key, node):
-        if node.key == None:
-            return 0
-
-        s = 0
-        if node.key == key:
-            s += 1
-
-        if key >= node.key:
-            s += self._count_by_key(key, node.rc)
-
-        if key <= node.key:
-            s += self._count_by_key(key, node.lc)
-
-        return s
 
     #
     # returns the first occurrences of node with 'key' in the tree
@@ -216,7 +197,7 @@ class RangeIndex(object):
         return self._find_by_key(key, self.root)
 
     def _find_by_key(self, key, node):
-        if node.key == None:
+        if not node.exists:
             return None 
 
         if node.key == key:
@@ -236,7 +217,7 @@ class RangeIndex(object):
     # Returns the minimum element of the sub-tree
     #
     def _find_min(self, node):
-        if node.lc.key == None:
+        if not node.lc.exists:
             return node 
         else:
             return self._find_min(node.lc)
@@ -249,16 +230,41 @@ class RangeIndex(object):
     # Returns the maximum element of the sub-tree
     #
     def _find_max(self, node):
-        if node.rc.key == None:
+        if not node.rc.exists:
             return node 
         else:
             return self._find_max(node.rc)
+
+    #
+    # returns the number of occurrences of 'key' in the tree
+    #
+    def count_by_key(self, key):
+        return self._count_by_key(key, self.root)
+
+    def _count_by_key(self, key, node):
+        if not node.exists:
+            return 0
+
+        s = 0
+        if node.key == key:
+            s += 1
+
+        if key >= node.key:
+            s += self._count_by_key(key, node.rc)
+
+        if key <= node.key:
+            s += self._count_by_key(key, node.lc)
+
+        return s
             
     #
     # Returns the number of elements that are >= first_key and <= last_key
     # It is assumed last_key >= first_key
     #
     def count(self, first_key, last_key):
+       if first_key > last_key:
+            raise ValueError('first key cannot be larger than last_key')
+
        low_cnt = self.range(first_key) 
        high_cnt = self.range(last_key) 
 
@@ -279,12 +285,18 @@ class RangeIndex(object):
         # won't work if the tree has duplicate keys
         a = node.lc
         b = node.rc
+        #print "Node a:", a, ", Node b:", b, ", Node.p:", node.p
 
         if node.p == None:
-            if a.key == None and b.key == None:
-                self.root = None
-            elif a.key == None:
+            if not a.exists and not b.exists:
+                #self.root = None
+                self.root = Node(None, None, None)
+            elif not a.exists:
                 self.root = b
+                b.p = None
+            elif not b.exists:
+                self.root = a
+                a.p = None 
             else:
                 # can optimize here and chose left or right sub-tree 
                 self.root = b
@@ -297,67 +309,78 @@ class RangeIndex(object):
                 #print "before balancing\n", self
                 self.balance(ltree_min)
         elif node > node.p:
-            if a.key == None and b.key == None:
-                node.p.rc = Node(None, node.p)
-            elif a.key == None:
+            if not a.exists and not b.exists:
+                node.p.rc = Node(None, node.p, None)
+                pnew = node.p
+            elif not a.exists:
                 node.p.rc = b
                 b.p = node.p
-            elif b.key == None:
+                pnew = node.p
+            elif not b.exists:
                 node.p.rc = a
                 a.p = node.p
+                pnew = node.p
             else:
                 ltree_max = self._find_max(a)
                 node.p.rc = a
                 a.p = node.p
                 ltree_max.rc = b
                 b.p = ltree_max
-                self.update_nodes_sizes(ltree_max)
-                self.update_nodes_heights(ltree_max)
-                self.balance(ltree_max)
+                pnew = ltree_max
+
+            self.update_nodes_sizes(pnew)
+            self.update_nodes_heights(pnew)
+            self.balance(pnew)
         else:
-            if a.key == None and b.key == None:
-                node.p.lc = Node(None, node.p)
-            elif a.key == None:
+            if not a.exists and not b.exists:
+                node.p.lc = Node(None, node.p, None)
+                pnew = node.p
+            elif not a.exists:
                 node.p.lc = b
                 b.p = node.p
-            elif b.key == None:
+                pnew = node.p
+            elif not b.exists:
                 node.p.lc = a
                 a.p = node.p
+                pnew = node.p
             else:
                 ltree_min = self._find_min(b)
                 node.p.lc = b
                 b.p = node.p
                 ltree_min.lc = a
                 a.p = ltree_min
-                self.update_nodes_sizes(ltree_min)
-                self.update_nodes_heights(ltree_min)
-                self.balance(ltree_min)
+                pnew = ltree_min
+
+            self.update_nodes_sizes(pnew)
+            self.update_nodes_heights(pnew)
+            self.balance(pnew)
   
     def list(self, first_key, last_key):
         """List of values for the keys that fall within [first_key, last_key]."""
         r = self._lca(first_key, last_key)
         #print "lca:", r.key
-        if r.key == None:
+        if not r.exists:
             return []
         else:
             lst = []
             self._add_node(r, first_key, last_key, lst)
-            return lst
+            return [node.key for node in lst]
 
     #
     # Traverses a subtree and returns all nodes within the given range
     # l <= x <= h
     #
     def _add_node(self, node, l, h, lst):
-        if (l <= node.key and node.key <= h):
-            lst.append(node)
-            #print 'appending:', node.key, "lc:", node.lc, "rc:", node.rc
-            self._add_node(node.rc, l, h, lst)
-            self._add_node(node.lc, l, h, lst)
-        elif node.key < l and node.key != None:
-            self._add_node(node.rc, l, h, lst)
-        elif node.key > h:
-            self._add_node(node.lc, l, h, lst)
+        if node.exists:
+            if (l <= node.key and node.key <= h):
+                lst.append(node)
+                #print 'appending:', node.key, "lc:", node.lc, "rc:", node.rc
+                self._add_node(node.rc, l, h, lst)
+                self._add_node(node.lc, l, h, lst)
+            elif node.key < l: # and node.exists:
+                self._add_node(node.rc, l, h, lst)
+            elif node.key > h:
+                self._add_node(node.lc, l, h, lst)
 
     #
     # LCA = least common ancestor
@@ -366,7 +389,7 @@ class RangeIndex(object):
     #
     def _lca(self, l, h):
         node = self.root
-        while not (l <= node.key and node.key <= h):
+        while node.exists and not (l <= node.key and node.key <= h):
             if node.key < l:
                 node = node.rc
             else:
@@ -392,7 +415,7 @@ class RangeIndex(object):
                 s = s + '\n\n'
                 just = 0
 
-            s = s + repr(node.key).rjust(x - just) \
+            s = s + repr(node.key.key).rjust(x - just) \
                     + "/" + repr(node.size) \
                     + "/" + repr(node.h)
             just = l[i][1]
@@ -402,33 +425,39 @@ class RangeIndex(object):
     #returns a list of Nodes with (x, y) 'coordinates'
     #sorted by y first, then by x
     def out(self, node, y, x, l = []):
+        if not node.exists:
+            return l
+
         l.append([y, x, node])
         next_y = y + 1
         d = int(120 / (2**next_y + 1) / 2)
 
-        if node.rc.key != None:
+        if node.rc.exists:
             self.out(node.rc, next_y, x + d, l)
 
-        if node.lc.key != None:
+        if node.lc.exists:
             self.out(node.lc, next_y, x - d, l)
 
         return l
 
 class Node():
-    def __init__(self, key, p):
-        self.key = key
+    def __init__(self, obj, p, dummy = 0):
         self.p = p
 
-        if key == None:
+        if dummy == None:
+            self.key = None
             self.lc = None
             self.rc = None
             self.h = -1 
             self.size = 0
+            self.exists = False
         else:
-            self.lc = Node(None, self)
-            self.rc = Node(None, self)
+            self.key = obj
+            self.lc = Node(None, self, None)
+            self.rc = Node(None, self, None)
             self.h = 0
             self.size = 1
+            self.exists = True
 
     def set_child(self, node):
         if self > node:

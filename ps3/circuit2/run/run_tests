@@ -29,6 +29,7 @@ do
             python $code < $file > $fbase.out
             out=$fbase.out
             gold=$fbase.gold
+            rm -f $gold
             ln -s ../tests/$fbase.gold $gold 
         else
             TRACE=list python $code < $file > $fbase.out
