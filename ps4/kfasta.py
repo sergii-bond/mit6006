@@ -52,17 +52,17 @@ def subsequences(seq, k):
 # Simple sanity checks
 class TestKFASTA(unittest.TestCase):
     def test_readseq(self):
-        seq = FastaSequence('trivial.fa')
+        seq = FastaSequence('./data/trivial.fa')
         seqstr = ''
         for c in seq:
             seqstr += c
         self.assertTrue('ABCDEFGHIJKLMNOPQRSTUVWXYZ' == seqstr)
     def test_subseq(self):
-        seq = FastaSequence('trivial.fa')
+        seq = FastaSequence('./data/trivial.fa')
         i = 0
         for subseq in subsequences(seq, 3):
             print subseq
             i += 1
         self.assertTrue(24 == i)
-#if __name__ == '__main__':
-#    unittest.main()
+if __name__ == '__main__':
+    unittest.main()
