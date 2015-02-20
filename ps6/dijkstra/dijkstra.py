@@ -6,6 +6,7 @@ import time
 from math import *
 from nhpn import *
 from priority_queue import *
+import pdb
 
 def distance(node1, node2):
     """Returns the distance between node1 and node2, ignoring the Earth's 
@@ -195,7 +196,70 @@ class PathFinder(object):
             A tuple: (the path as a list of nodes from source to destination, 
                       the number of visited nodes)
         """
-        return NotImplemented 
+        pq = PriorityQueue() #queue to store NodeDistancePair instances
+        d = {} # key is node, value is NodeDistancePair instance
+        parent = {} # key is node value is a parent node
+
+        inf = 1000000
+        # Assign infinity distance to all nodes and add them to pqueue
+        #for x in nodes:
+        #    ndp = NodeDistancePair(x, inf)
+        #    d[x] = ndp
+        #    pq.insert(ndp)
+
+        # Assign 0 distance for the source node
+        #d[source].distance = 0
+        #pq.decrease_key(d[source])
+        ndp = NodeDistancePair(source, 0)
+        d[source] = ndp
+        parent[source] = None
+        pq.insert(ndp)
+
+        while len(pq) != 0:
+            #pdb.set_trace()
+            ndp_parent = pq.extract_min()
+            #if destination in d:
+                #print ndp_parent.distance, " ", d[destination].distance
+
+            if ndp_parent.node == destination:
+                l = [destination]
+                x = parent[destination]
+                while x:
+                    #print x
+                    l.append(x)
+                    x = parent[x]
+
+                l.reverse()
+
+                return (l, len(l))
+
+            for cnode in ndp_parent.node.adj:
+                # relax node's distance if needed
+                w = weight(ndp_parent.node, cnode)
+
+                if cnode not in d: 
+                    ndp = NodeDistancePair(cnode, ndp_parent.distance + w)
+                    d[cnode] = ndp
+                    pq.insert(ndp)
+                    ndp_child = ndp
+                    parent[cnode] = ndp_parent.node
+                else:
+                    ndp_child = d[cnode] 
+
+                    if ndp_child.distance > ndp_parent.distance + w:
+                        ndp_child.distance = ndp_parent.distance + w
+                        pq.decrease_key(ndp_child)
+                        parent[cnode] = ndp_parent.node
+
+                #if cnode == destination:
+                #    print destination
+
+
+        return None
+        #return NotImplemented 
+
+    #def _relax(p, node, ):
+
         
     @staticmethod
     def from_file(file, network):
